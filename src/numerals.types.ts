@@ -30,6 +30,7 @@ export enum NumeralsRenderStyle {
 	Plain = "Plain",
 	TeX ="TeX",
 	SyntaxHighlight = "SyntaxHighlight",
+	LaTeX = "LaTeX",
 }
 
 export enum NumeralsNumberFormat {

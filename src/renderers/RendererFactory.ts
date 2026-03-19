@@ -3,6 +3,7 @@ import { ILineRenderer } from './ILineRenderer';
 import { PlainRenderer } from './PlainRenderer';
 import { TeXRenderer } from './TeXRenderer';
 import { SyntaxHighlightRenderer } from './SyntaxHighlightRenderer';
+import { LatexRenderer } from './LatexRenderer';
 
 /**
  * Factory for creating line renderer instances based on render style.
@@ -42,6 +43,8 @@ export class RendererFactory {
 				renderer = new TeXRenderer(); break;
 			case NumeralsRenderStyle.SyntaxHighlight:
 				renderer = new SyntaxHighlightRenderer(); break;
+			case NumeralsRenderStyle.LaTeX:
+				renderer = new LatexRenderer(); break;
 			default:
 				// This should never happen with TypeScript enum, but provides safety
 				throw new Error(`Unknown render style: ${String(style)}`);

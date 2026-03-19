@@ -259,6 +259,12 @@ export default class NumeralsPlugin extends Plugin {
 		this.registerMarkdownCodeBlockProcessor("math-TeX", this.numeralsMathBlockHandler.bind(this, NumeralsRenderStyle.TeX), priority);
 		this.registerMarkdownCodeBlockProcessor("math-highlight", this.numeralsMathBlockHandler.bind(this, NumeralsRenderStyle.SyntaxHighlight), priority);
 
+		// LaTeX-native code block processors (uses Cortex Compute Engine, not MathJS)
+		// Users write standard LaTeX math; LaTeX Suite snippets expand automatically
+		this.registerMarkdownCodeBlockProcessor("math-latex", this.numeralsMathBlockHandler.bind(this, NumeralsRenderStyle.LaTeX), priority);
+		this.registerMarkdownCodeBlockProcessor("math-LaTeX", this.numeralsMathBlockHandler.bind(this, NumeralsRenderStyle.LaTeX), priority);
+		this.registerMarkdownCodeBlockProcessor("latex-math", this.numeralsMathBlockHandler.bind(this, NumeralsRenderStyle.LaTeX), priority);
+
 		// Register inline Numerals post-processor (Reading mode)
 		this.registerMarkdownPostProcessor(
 			createInlineNumeralsPostProcessor(

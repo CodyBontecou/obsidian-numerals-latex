@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Added
+- **LaTeX-native evaluation** via the [Cortex Compute Engine](https://cortex.js.org/compute-engine/). New code block types `math-latex`, `math-LaTeX`, and `latex-math` accept standard LaTeX math expressions and evaluate them using the CE instead of MathJS:
+  - Exact rational arithmetic: `\frac{1}{2} + \frac{1}{4}` → `\frac{3}{4}`
+  - Symbolic results: `\sqrt{2}` stays symbolic unless numeric evaluation is requested
+  - Variable assignment via `=`: `x = 5` followed by `x^2 + 3` → `28`
+  - Greek letter variables: `\alpha = 3`, `\alpha^2` → `9`
+  - Full trigonometry: `\sin\left(\frac{\pi}{6}\right)` → `\frac{1}{2}` (exact)
+  - `@prev` and `@sum`/`@total` directives work in LaTeX blocks
+  - All existing Numerals layout styles (two-pane, answer-right, etc.) apply
+  - Both input expression and result are rendered via MathJax
+- Integrates seamlessly with the **LaTeX Suite** plugin — snippets expand in the editor before Numerals processes the block, so LaTeX Suite shortcuts automatically apply in `math-latex` blocks with no configuration
+- `applyNumeralsScopeToComputeEngine` helper to seed CE symbol table from numeric frontmatter values
+
 ### Fixed
 - Syntax highlighting renderer no longer displays numbers ≥100,000 in scientific notation (e.g. `226000` was shown as `2.26e+5`). (Closes #118)
 

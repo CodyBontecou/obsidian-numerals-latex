@@ -9,4 +9,5 @@ export { BaseLineRenderer } from './BaseLineRenderer';
 export { PlainRenderer } from './PlainRenderer';
 export { TeXRenderer } from './TeXRenderer';
 export { SyntaxHighlightRenderer } from './SyntaxHighlightRenderer';
+export { LatexRenderer } from './LatexRenderer';
 export { RendererFactory } from './RendererFactory';

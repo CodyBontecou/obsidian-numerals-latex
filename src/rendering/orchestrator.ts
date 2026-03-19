@@ -1,10 +1,12 @@
 import * as math from 'mathjs';
+import { ComputeEngine } from '@cortex-js/compute-engine';
 import { App, Editor, MarkdownPostProcessorContext, MarkdownView, WorkspaceLeaf } from 'obsidian';
 import { NumeralsLayout, NumeralsRenderStyle, NumeralsSettings, mathjsFormat, NumeralsScope, StringReplaceMap, ProcessedBlock, EvaluationResult, RenderContext } from '../numerals.types';
 import { RendererFactory } from '../renderers';
 import { getScopeFromFrontmatter } from '../processing/scope';
 import { preProcessBlockForNumeralsDirectives } from '../processing/preprocessor';
 import { evaluateMathFromSourceStrings } from '../processing/evaluator';
+import { evaluateLatexFromSourceStrings, applyNumeralsScopeToComputeEngine } from '../processing/latexEvaluator';
 import { prepareLineData } from './linePreparation';
 
 /**
@@ -182,6 +184,86 @@ export function handleResultInsertions(
 }
 
 /**
+ * Renders a LaTeX-mode Numerals block using the Cortex Compute Engine.
+ *
+ * This is the evaluation path for `math-latex` / `latex` code blocks. It uses the
+ * Compute Engine instead of MathJS, accepting native LaTeX math expressions as input
+ * and rendering both input and results via MathJax.
+ *
+ * A fresh ComputeEngine instance is created per block to ensure variable isolation
+ * between blocks on the same page.
+ *
+ * @param el - The HTML element to render into
+ * @param source - Raw block source (LaTeX math expressions, one per line)
+ * @param ctx - Markdown post-processor context
+ * @param metadata - Frontmatter/Dataview metadata for pre-populating numeric variables
+ * @param settings - Plugin settings
+ * @param preProcessors - String replacement maps (passed through but not applied to LaTeX input)
+ * @returns An empty NumeralsScope (LaTeX mode does not export globals to page cache)
+ */
+function processAndRenderLatexBlockFromSource(
+	el: HTMLElement,
+	source: string,
+	ctx: MarkdownPostProcessorContext,
+	metadata: {[key: string]: unknown} | undefined,
+	settings: NumeralsSettings,
+	preProcessors: StringReplaceMap[],
+): NumeralsScope {
+	// Phase 1: Always use LaTeX render style
+	const blockRenderStyle = NumeralsRenderStyle.LaTeX;
+
+	// Phase 2: Preprocess directives (reuse existing preprocessor; no currency substitution)
+	// We pass undefined for preProcessors so currency/thousands transforms don't mangle LaTeX
+	const processedBlock = preProcessBlockForNumeralsDirectives(source, undefined);
+
+	// Phase 3: Apply block styles
+	applyBlockStyles({
+		el,
+		settings,
+		blockRenderStyle,
+		hasEmitters: processedBlock.blockInfo.emitter_lines.length > 0,
+	});
+
+	// Phase 4: Build MathJS scope from frontmatter (for numeric values only),
+	// then convert to Compute Engine assignments
+	const { scope, warnings } = getScopeFromFrontmatter(
+		metadata,
+		undefined,
+		settings.forceProcessAllFrontmatter,
+		preProcessors
+	);
+
+	// Create a fresh CE per block for variable isolation
+	const ce = new ComputeEngine();
+	applyNumeralsScopeToComputeEngine(scope, ce);
+
+	// Phase 5: Evaluate with Compute Engine
+	const evaluationResult = evaluateLatexFromSourceStrings(
+		processedBlock.processedSource,
+		ce
+	);
+
+	// Phase 6: Render (no result insertions in LaTeX mode for now)
+	const renderContext: RenderContext = {
+		renderStyle: blockRenderStyle,
+		settings,
+		numberFormat: undefined, // CE produces LaTeX directly; no numberFormat needed
+		preProcessors,
+	};
+
+	renderNumeralsBlock(el, evaluationResult, processedBlock, renderContext);
+
+	// Phase 7: Render frontmatter warnings
+	for (const warning of warnings) {
+		const warningEl = el.createEl('div', { cls: 'numerals-warning' });
+		warningEl.createEl('span', { cls: 'numerals-warning-message', text: warning });
+	}
+
+	// LaTeX mode does not export $-globals to the page cache (future enhancement)
+	return new NumeralsScope();
+}
+
+/**
  * Renders a Numerals block from a given source string, using provided metadata and settings.  
  *   
  * This function takes a source string, which represents a block of Numerals code, and processes it   
@@ -219,6 +301,15 @@ export function processAndRenderNumeralsBlockFromSource(
 
 	// Phase 1: Determine render style
 	const blockRenderStyle: NumeralsRenderStyle = type ?? settings.defaultRenderStyle;
+
+	// LaTeX mode: completely separate evaluation path using the Cortex Compute Engine.
+	// This handles native LaTeX input (`math-latex` / `latex` code blocks) without
+	// going through MathJS at all.
+	if (blockRenderStyle === NumeralsRenderStyle.LaTeX) {
+		return processAndRenderLatexBlockFromSource(
+			el, source, ctx, metadata, settings, preProcessors
+		);
+	}
 
 	// Phase 2: Preprocess
 	const processedBlock = preProcessBlockForNumeralsDirectives(source, preProcessors);
@@ -286,6 +377,7 @@ export const numeralsRenderStyleClasses = {
 	[NumeralsRenderStyle.Plain]: 			"numerals-plain",
 	[NumeralsRenderStyle.TeX]: 			 	"numerals-tex",
 	[NumeralsRenderStyle.SyntaxHighlight]: 	"numerals-syntax",
+	[NumeralsRenderStyle.LaTeX]: 			"numerals-latex",
 }
 
 /**
