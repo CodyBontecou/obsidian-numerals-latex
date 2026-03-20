@@ -41,11 +41,11 @@ async function releaseProduction() {
         
         console.log(`✅ Production release complete! Tagged as ${targetVersion}`);
         console.log("🚀 GitHub Actions will automatically build and publish the release.");
-        console.log(`📦 Release page: https://github.com/gtg922r/obsidian-numerals/releases/tag/${targetVersion}`);
+        console.log(`📦 Release page: https://github.com/CodyBontecou/obsidian-numerals-latex/releases/tag/${targetVersion}`);
         
         // Only show PR link if not on master branch
         if (currentBranch !== 'master') {
-            console.log(`📋 Create PR: https://github.com/gtg922r/obsidian-numerals/compare/master...${currentBranch}?quick_pull=1&title=Release%20${targetVersion}&body=Production%20release%20for%20version%20${targetVersion}`);
+            console.log(`📋 Create PR: https://github.com/CodyBontecou/obsidian-numerals-latex/compare/master...${currentBranch}?quick_pull=1&title=Release%20${targetVersion}&body=Production%20release%20for%20version%20${targetVersion}`);
         }
         
     } catch (error) {
